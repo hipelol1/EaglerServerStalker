@@ -1,43 +1,144 @@
-import requests
-import json
-import time
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Minecraft Server Checker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #111;
+            color: white;
+            text-align: center;
+            margin-top: 50px;
+        }
 
-def get_server_status(server_address):
-    try:
-        response = requests.get(f"https://api.mcsrvstat.us/2/{server_address}")
-        data = response.json()
-        return data
-    except Exception as e:
-        print("Error fetching server status:", e)
-        return None
+        input {
+            padding: 10px;
+            font-size: 16px;
+            width: 250px;
+            border-radius: 5px;
+            border: none;
+            margin-right: 10px;
+        }
 
-def send_to_discord(webhook_url, message):
-    try:
-        payload = {"content": message}
-        headers = {"Content-Type": "application/json"}
-        response = requests.post(webhook_url, data=json.dumps(payload), headers=headers)
-        if response.status_code == 204:
-            print("Message sent to Discord successfully.")
-        else:
-            print(f"Failed to send message to Discord. Status code: {response.status_code}")
-    except Exception as e:
-        print("Error sending message to Discord:", e)
+        button {
+            padding: 10px 15px;
+            font-size: 16px;
+            border-radius: 5px;
+            border: none;
+            background-color: #00ff66;
+            color: #111;
+            cursor: pointer;
+        }
 
-if __name__ == "__main__":
-    # Replace these with your Minecraft server's IP address and Discord webhook URL
-    server_address = ""   #server ip:port 
-    webhook_url = ""   #webhookhere
+        .status-box {
+            margin-top: 30px;
+            padding: 20px;
+            width: 350px;
+            margin-left: auto;
+            margin-right: auto;
+            border-radius: 10px;
+            background: #222;
+        }
 
-    while True:
-        server_status = get_server_status(server_address)
-        if server_status:
-            if server_status["online"]:
-                message = f"Server is online with {server_status['players']['online']} players."
-            else:
-                message = "Server is offline."
-        else:
-            message = "Failed to fetch server status."
+        .playerCount, .status {
+            font-size: 22px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
 
-        send_to_discord(webhook_url, message)
-        # Check server status every 5 minutes
-        time.sleep(300)
+        .online { color: #00ff66; }
+        .offline { color: #ff4444; }
+
+        .credit {
+            font-weight: bold;
+            color: white;
+            margin-top: 20px;
+            font-size: 16px;
+        }
+
+        .youtube-link {
+            margin-top: 10px;
+            display: inline-block;
+        }
+
+        .youtube-link img {
+            width: 50px;
+            height: 50px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Minecraft Server Checker</h1>
+
+<input type="text" id="serverInput" placeholder="Enter server address e.g. ethereal.mov">
+<button onclick="startChecking()">Check Server</button>
+
+<div class="status-box">
+    <h2 id="serverName">No server selected</h2>
+    <div id="playerCount" class="playerCount">Waiting...</div>
+    <div id="serverStatus" class="status">Waiting...</div>
+</div>
+
+<div class="credit">Made by skulldagrait</div>
+<a href="https://www.youtube.com/@skulldagrait" target="_blank" class="youtube-link">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/4/42/YouTube_icon_%282013-2017%29.png" alt="YouTube Logo">
+</a>
+
+<script>
+let currentServer = "";
+let interval;
+
+async function checkServer(server) {
+    const playerEl = document.getElementById("playerCount");
+    const statusEl = document.getElementById("serverStatus");
+    const nameEl = document.getElementById("serverName");
+
+    nameEl.textContent = server;
+
+    try {
+        let cleanServer = server.replace(/^wss:\/\//, "");
+
+        const res = await fetch(
+            `https://api.mcstatus.io/v2/status/java/${cleanServer}?_=${Date.now()}`,
+            { cache: "no-store" }
+        );
+
+        const data = await res.json();
+
+        if (data.online && data.players) {
+            playerEl.textContent = `${data.players.online} player(s) online`;
+            statusEl.textContent = "ONLINE";
+            playerEl.className = "playerCount online";
+            statusEl.className = "status online";
+        } else {
+            playerEl.textContent = `0 player(s) online`;
+            statusEl.textContent = "OFFLINE";
+            playerEl.className = "playerCount offline";
+            statusEl.className = "status offline";
+        }
+
+    } catch (err) {
+        playerEl.textContent = `0 player(s) online`;
+        statusEl.textContent = "OFFLINE";
+        playerEl.className = "playerCount offline";
+        statusEl.className = "status offline";
+    }
+}
+
+function startChecking() {
+    const serverInput = document.getElementById("serverInput").value.trim();
+    if (!serverInput) return alert("Please enter a server address");
+
+    currentServer = serverInput;
+
+    if (interval) clearInterval(interval);
+
+    checkServer(currentServer);
+    interval = setInterval(() => checkServer(currentServer), 1000);
+}
+</script>
+
+</body>
+</html>
