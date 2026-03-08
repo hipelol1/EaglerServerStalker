@@ -1,77 +1,75 @@
 <!DOCTYPE html>
-
 <html>
 <head>
-    <title>Minecraft Server Checker</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #111;
-            color: white;
-            text-align: center;
-            margin-top: 50px;
-        }
+<title>Minecraft Server Checker</title>
 
-```
-    input {
-        padding: 10px;
-        font-size: 16px;
-        width: 250px;
-        border-radius: 5px;
-        border: none;
-        margin-right: 10px;
-    }
+<style>
+body{
+    font-family:Arial,sans-serif;
+    background:#111;
+    color:white;
+    text-align:center;
+    margin-top:50px;
+}
 
-    button {
-        padding: 10px 15px;
-        font-size: 16px;
-        border-radius: 5px;
-        border: none;
-        background-color: #00ff66;
-        color: #111;
-        cursor: pointer;
-    }
+input{
+    padding:10px;
+    font-size:16px;
+    width:250px;
+    border-radius:5px;
+    border:none;
+    margin-right:10px;
+}
 
-    .status-box {
-        margin-top: 30px;
-        padding: 20px;
-        width: 350px;
-        margin-left: auto;
-        margin-right: auto;
-        border-radius: 10px;
-        background: #222;
-    }
+button{
+    padding:10px 15px;
+    font-size:16px;
+    border-radius:5px;
+    border:none;
+    background-color:#00ff66;
+    color:#111;
+    cursor:pointer;
+}
 
-    .playerCount, .status {
-        font-size: 22px;
-        font-weight: bold;
-        margin-top: 10px;
-    }
+.status-box{
+    margin-top:30px;
+    padding:20px;
+    width:350px;
+    margin-left:auto;
+    margin-right:auto;
+    border-radius:10px;
+    background:#222;
+}
 
-    .online { color: #00ff66; }
-    .offline { color: #ff4444; }
+.playerCount,.status{
+    font-size:22px;
+    font-weight:bold;
+    margin-top:10px;
+}
 
-    .credit {
-        font-weight: bold;
-        color: white;
-        margin-top: 20px;
-        font-size: 16px;
-    }
+.online{color:#00ff66;}
+.offline{color:#ff4444;}
 
-    .youtube-link {
-        margin-top: 10px;
-        display: inline-block;
-    }
+.credit{
+    font-weight:bold;
+    color:white;
+    margin-top:20px;
+    font-size:16px;
+}
 
-    .youtube-link img {
-        width: 50px;
-        height: 50px;
-        cursor: pointer;
-    }
+.youtube-link{
+    margin-top:10px;
+    display:inline-block;
+}
+
+.youtube-link img{
+    width:50px;
+    height:50px;
+    cursor:pointer;
+}
 </style>
-```
-
 </head>
+
 <body>
 
 <h1>Minecraft Server Checker</h1>
@@ -80,11 +78,123 @@
 <button onclick="startChecking()">Check Server</button>
 
 <div class="status-box">
-    <h2 id="serverName">No server selected</h2>
-    <div id="playerCount" class="playerCount">Waiting...</div>
-    <div id="serverStatus" class="status">Waiting...</div>
+<h2 id="serverName">No server selected</h2>
+<div id="playerCount" class="playerCount">Waiting...</div>
+<div id="serverStatus" class="status">Waiting...</div>
 </div>
 
 <div class="credit">Made by skulldagrait</div>
+
 <a href="https://www.youtube.com/@skulldagrait" target="_blank" class="youtube-link">
-    <img src="https://upload.wikimedia.org/wikipedia/commons/4/42/YouTube_icon_
+<img src="https://upload.wikimedia.org/wikipedia/commons/4/42/YouTube_icon_%282013-2017%29.png">
+</a>
+
+<script>
+
+let currentServer="";
+let interval;
+
+document.getElementById("serverInput").addEventListener("keydown",function(e){
+    if(e.key==="Enter"){
+        startChecking();
+    }
+});
+
+async function checkServer(server){
+
+const playerEl=document.getElementById("playerCount");
+const statusEl=document.getElementById("serverStatus");
+const nameEl=document.getElementById("serverName");
+
+nameEl.textContent=server;
+
+try{
+
+let cleanServer=server.replace(/^wss:\/\//,"");
+
+const res=await fetch(
+`https://api.mcstatus.io/v2/status/java/${cleanServer}?_=${Date.now()}`,
+{cache:"no-store"}
+);
+
+const data=await res.json();
+
+let players=0;
+let ping="?";
+let motd="";
+
+if(data.players){
+players=data.players.online||0;
+}
+
+if(data.latency){
+ping=data.latency;
+}
+
+if(data.motd && data.motd.clean){
+motd=data.motd.clean.join(" ");
+}
+
+if(!data.online){
+
+playerEl.textContent="0 player(s) online";
+statusEl.textContent="OFFLINE";
+
+playerEl.className="playerCount offline";
+statusEl.className="status offline";
+
+}
+else if(motd.trim().toLowerCase()==="server is currently offline"){
+
+playerEl.textContent="0 player(s) online";
+statusEl.textContent="OFFLINE";
+
+playerEl.className="playerCount offline";
+statusEl.className="status offline";
+
+}
+else{
+
+playerEl.textContent=`${players} player(s) online | Ping: ${ping}ms`;
+statusEl.textContent="RESPONDING";
+
+playerEl.className="playerCount online";
+statusEl.className="status online";
+
+}
+
+}catch{
+
+playerEl.textContent="0 player(s) online";
+statusEl.textContent="OFFLINE";
+
+playerEl.className="playerCount offline";
+statusEl.className="status offline";
+
+}
+
+}
+
+function startChecking(){
+
+const serverInput=document.getElementById("serverInput").value.trim();
+
+if(!serverInput){
+alert("Please enter a server address");
+return;
+}
+
+currentServer=serverInput;
+
+if(interval) clearInterval(interval);
+
+checkServer(currentServer);
+
+interval=setInterval(()=>checkServer(currentServer),5000);
+
+}
+
+</script>
+
+</body>
+</html>
