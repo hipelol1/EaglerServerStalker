@@ -83,14 +83,16 @@
 
 <div class="credit">Made by skulldagrait</div>
 <a href="https://www.youtube.com/@skulldagrait" target="_blank" class="youtube-link">
-    <img src="https://upload.wikimedia.org/wikipedia/commons/4/42/YouTube_icon_%282013-2017%29.png" alt="YouTube Logo">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/4/42/YouTube_icon_%282013-2017%29.png">
 </a>
 
 <script>
+
 let currentServer = "";
 let interval;
 
 async function checkServer(server) {
+
     const playerEl = document.getElementById("playerCount");
     const statusEl = document.getElementById("serverStatus");
     const nameEl = document.getElementById("serverName");
@@ -98,6 +100,7 @@ async function checkServer(server) {
     nameEl.textContent = server;
 
     try {
+
         let cleanServer = server.replace(/^wss:\/\//, "");
 
         const res = await fetch(
@@ -107,37 +110,69 @@ async function checkServer(server) {
 
         const data = await res.json();
 
-        if (data.online && data.players) {
-            playerEl.textContent = `${data.players.online} player(s) online`;
-            statusEl.textContent = "ONLINE";
-            playerEl.className = "playerCount online";
-            statusEl.className = "status online";
-        } else {
-            playerEl.textContent = `0 player(s) online`;
+        let ping = data.latency ?? "?";
+        let players = data.players ? data.players.online : 0;
+
+        let motd = "";
+
+        if (data.motd) {
+            if (data.motd.clean) {
+                motd = data.motd.clean.join(" ");
+            } else if (data.motd.raw) {
+                motd = data.motd.raw.join(" ");
+            }
+        }
+
+        motd = motd.toLowerCase();
+
+        if (!data.online || motd.includes("offline")) {
+
+            playerEl.textContent = "0 player(s) online";
             statusEl.textContent = "OFFLINE";
+
             playerEl.className = "playerCount offline";
             statusEl.className = "status offline";
+
+        } else {
+
+            playerEl.textContent = `${players} player(s) online | Ping: ${ping}ms`;
+            statusEl.textContent = "ONLINE";
+
+            playerEl.className = "playerCount online";
+            statusEl.className = "status online";
+
         }
 
     } catch (err) {
-        playerEl.textContent = `0 player(s) online`;
+
+        playerEl.textContent = "0 player(s) online";
         statusEl.textContent = "OFFLINE";
+
         playerEl.className = "playerCount offline";
         statusEl.className = "status offline";
+
     }
 }
 
 function startChecking() {
+
     const serverInput = document.getElementById("serverInput").value.trim();
-    if (!serverInput) return alert("Please enter a server address");
+
+    if (!serverInput) {
+        alert("Please enter a server address");
+        return;
+    }
 
     currentServer = serverInput;
 
     if (interval) clearInterval(interval);
 
     checkServer(currentServer);
-    interval = setInterval(() => checkServer(currentServer), 1000);
+
+    interval = setInterval(() => checkServer(currentServer), 5000);
+
 }
+
 </script>
 
 </body>
